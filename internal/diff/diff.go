@@ -1,54 +1,49 @@
 package diff
 
-// Result holds the comparison result between two env files.
+// Status describes the relationship of a key between two env files.
+type Status string
+
+const (
+	StatusOK       Status = "ok"
+	StatusMissing  Status = "missing"
+	StatusConflict Status = "conflict"
+)
+
+// Result holds the comparison outcome for a single key.
 type Result struct {
-	// MissingInSecond contains keys present in first but absent in second.
-	MissingInSecond []string
-	// MissingInFirst contains keys present in second but absent in first.
-	MissingInFirst []string
-	// Conflicts contains keys present in both files but with different values.
-	Conflicts []Conflict
+	Key     string `json:"key"`
+	Status  Status `json:"status"`
+	ValueA  string `json:"value_a,omitempty"`
+	ValueB  string `json:"value_b,omitempty"`
+	FileA   string `json:"file_a,omitempty"`
+	FileB   string `json:"file_b,omitempty"`
 }
 
-// Conflict describes a key whose value differs between two env files.
-type Conflict struct {
-	Key        string
-	FirstValue  string
-	SecondValue string
-}
+// Compare compares two parsed env maps (key→value) and returns a slice of
+// Result entries describing every key found in either map.
+func Compare(a, b map[string]string, fileA, fileB string) []Result {
+	seen := make(map[string]bool)
+	var results []Result
 
-// Compare takes two parsed env maps and returns a Result describing
-// missing keys and conflicting values between them.
-func Compare(first, second map[string]string) Result {
-	var result Result
+	for k, va := range a {
+		seen[k] = true
+		vb, ok := b[k]
+		switch {
+		case !ok:
+			results = append(results, Result{Key: k, Status: StatusMissing, ValueA: va, FileA: fileA, FileB: fileB})
+		case va != vb:
+			results = append(results, Result{Key: k, Status: StatusConflict, ValueA: va, ValueB: vb, FileA: fileA, FileB: fileB})
+		default:
+			results = append(results, Result{Key: k, Status: StatusOK, ValueA: va, ValueB: vb, FileA: fileA, FileB: fileB})
+		}
+	}
 
-	for key, val1 := range first {
-		val2, ok := second[key]
-		if !ok {
-			result.MissingInSecond = append(result.MissingInSecond, key)
+	for k, vb := range b {
+		if seen[k] {
 			continue
 		}
-		if val1 != val2 {
-			result.Conflicts = append(result.Conflicts, Conflict{
-				Key:         key,
-				FirstValue:  val1,
-				SecondValue: val2,
-			})
-		}
+		results = append(results, Result{Key: k, Status: StatusMissing, ValueB: vb, FileA: fileA, FileB: fileB})
 	}
 
-	for key := range second {
-		if _, ok := first[key]; !ok {
-			result.MissingInFirst = append(result.MissingInFirst, key)
-		}
-	}
-
-	return result
-}
-
-// HasDifferences returns true if the Result contains any discrepancies.
-func (r Result) HasDifferences() bool {
-	return len(r.MissingInFirst) > 0 ||
-		len(r.MissingInSecond) > 0 ||
-		len(r.Conflicts) > 0
+	return results
 }
