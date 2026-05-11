@@ -15,4 +15,13 @@
 // files and iterate over them:
 //
 //	files, err := loader.LoadGlob(".env.*")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	for _, f := range files {
+//		fmt.Println(f.Path, f.Vars)
+//	}
+//
+// Files that do not exist or cannot be parsed return a descriptive error
+// that includes the offending file path for easier debugging.
 package loader
