@@ -91,3 +91,19 @@ func TestWrite_EmptyResults(t *testing.T) {
 		t.Errorf("expected empty output for empty results, got: %q", buf.String())
 	}
 }
+
+func TestWrite_ShellFormat_QuotedValues(t *testing.T) {
+	results := []diff.Result{
+		{Key: "GREETING", Status: diff.Missing, BaseValue: "hello world"},
+	}
+	var buf strings.Builder
+	opts := exporter.Options{Format: exporter.FormatShell}
+	err := exporter.Write(&buf, results, opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, `export GREETING="hello world"`) {
+		t.Errorf("expected quoted shell export, got:\n%s", out)
+	}
+}
