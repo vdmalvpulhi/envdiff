@@ -22,6 +22,13 @@
 //		fmt.Println(f.Path, f.Vars)
 //	}
 //
+// # File Format
+//
+// Each .env file is expected to contain key=value pairs, one per line.
+// Lines beginning with '#' are treated as comments and ignored. Blank
+// lines are also ignored. Values may optionally be quoted with single
+// or double quotes.
+//
 // Files that do not exist or cannot be parsed return a descriptive error
 // that includes the offending file path for easier debugging.
 package loader
