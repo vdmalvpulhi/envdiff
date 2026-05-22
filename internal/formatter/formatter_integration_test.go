@@ -71,3 +71,25 @@ func TestFormatter_Integration_EmptyFiles(t *testing.T) {
 		t.Errorf("expected no-diff message for empty files, got %q", out)
 	}
 }
+
+func TestFormatter_Integration_IdenticalFiles(t *testing.T) {
+	content := "APP=myapp\nDB_HOST=localhost\nSECRET=abc\n"
+	file1 := writeEnvFile(t, content)
+	file2 := writeEnvFile(t, content)
+
+	map1, err := parser.ParseFile(file1)
+	if err != nil {
+		t.Fatalf("parse file1: %v", err)
+	}
+	map2, err := parser.ParseFile(file2)
+	if err != nil {
+		t.Fatalf("parse file2: %v", err)
+	}
+
+	results := diff.Compare(map1, map2)
+	out := formatter.Format(results, formatter.DefaultOptions())
+
+	if out != "No differences found." {
+		t.Errorf("expected no-diff message for identical files, got %q", out)
+	}
+}
